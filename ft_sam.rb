@@ -40,7 +40,8 @@ class FreeTubeDBMerger
   end
 
   def save_to_file
-    file = File.new('./ft_merged_subs1.db', 'w')
+    date = Time.now.strftime('%Y-%m-%d_%H%M')
+    file = File.new("./ft_merged_#{date}.db", 'w')
     @unified_list.categories.map! { |category| JSON.generate(category.to_h) }
     file.write @unified_list.categories.join("\n") << "\n"
     file.close
