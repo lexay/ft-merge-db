@@ -65,14 +65,6 @@ module FreeTubeTools
         @subscriptions = subscriptions.map { |s| s.is_a?(Subscription) ? s : Subscription.new(**s) }
       end
 
-      def eql?(other)
-        @name == other.name
-      end
-
-      def hash
-        @name.hash
-      end
-
       def to_h
         { 'name' => @name,
           '_id' => @id,
@@ -101,8 +93,7 @@ module FreeTubeTools
       end
 
       def to_h
-        atr = { 'name' => @name, 'id' => @id, 'thumbnail' => @thumbnail }
-        # atr.merge({ 'selected' => @selected }) unless @selected.nil?
+        { 'name' => @name, 'id' => @id, 'thumbnail' => @thumbnail }
       end
     end
   end
