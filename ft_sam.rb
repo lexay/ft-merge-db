@@ -6,43 +6,44 @@ Bundler.require(:default)
 module FreeTubeTools
   class SubscriptionMerger
     def self.run
-      dbs = ARGV
-      export_lists = dbs.map { |db| List.new(SubscriptionMerger.serialize(db)) }
-      import_list = convert(export_lists, List.new)
-      save(import_list)
+      backup_dbs = ARGV
+      imported_lists = backup_dbs.map { |db| List.new(deserialize(db)) }
+      merged_list = merge(imported_lists, List.new)
+      save(merged_list)
     end
 
-    def self.serialize(db)
-      file = File.open("./#{db}", 'r', &:readlines)
-      file.map! { |line| JSON.parse(line) }
-      file.map { |hash| hash.deep_transform_keys { |key| key.underscore.to_sym } }
+    def self.deserialize(db)
+      lines = File.open("./#{db}", 'r', &:readlines)
+      lines.map do |line|
+        hash = JSON.parse(line)
+        hash.deep_transform_keys { |key| key.underscore.to_sym }
+      end
     end
 
-    def self.convert(export_lists = [], import_list)
-      export_lists.each do |e_list|
-        e_list.categories.each do |e_cat|
-          import_cat_matched = import_list.categories.find { |i_cat| i_cat.name == e_cat.name }
+    def self.merge(imported_lists = [], merged_list)
+      imported_lists.each do |i_list|
+        i_list.categories.each do |i_cat|
+          merged_cat_matched = merged_list.categories.find { |m_cat| m_cat.name == i_cat.name }
 
-          if import_cat_matched
-            import_cat_matched.subscriptions = import_cat_matched.subscriptions | e_cat.subscriptions
+          if merged_cat_matched
+            merged_cat_matched.subscriptions = merged_cat_matched.subscriptions | i_cat.subscriptions
           else
-            new_cat = List::Category.new(name: e_cat.name,
-                                         _id: e_cat.id,
-                                         bg_color: e_cat.bg_color,
-                                         text_color: e_cat.text_color,
-                                         subscriptions: e_cat.subscriptions)
-            import_list.categories.push(new_cat)
+            new_cat = List::Category.new(name: i_cat.name,
+                                         _id: i_cat.id,
+                                         bg_color: i_cat.bg_color,
+                                         text_color: i_cat.text_color,
+                                         subscriptions: i_cat.subscriptions)
+            merged_list.categories.push(new_cat)
           end
         end
       end
-      import_list
+      merged_list
     end
 
     def self.save(list)
       date = Time.now.strftime('%Y-%m-%d_%H%M')
-      file = File.open("./ft_merged_#{date}.db", 'w')
-      categories = list.categories.map { |c| JSON.generate(c.to_h) }
-      file.write categories.join("\n") << "\n"
+      new_backup_db = File.open("./ft_merged_#{date}.db", 'w')
+      new_backup_db.write(list.to_s)
     end
   end
 
@@ -51,6 +52,10 @@ module FreeTubeTools
 
     def initialize(categories = [])
       @categories = categories.map { |c| Category.new(**c) }
+    end
+
+    def to_s
+      self.categories.map { |cat| JSON.generate(cat.to_h) }.join("\n") << "\n"
     end
 
     class Category
@@ -62,7 +67,7 @@ module FreeTubeTools
         @id = _id
         @bg_color = bg_color
         @text_color = text_color
-        @subscriptions = subscriptions.map { |s| s.is_a?(Subscription) ? s : Subscription.new(**s) }
+        @subscriptions = subscriptions.map { |sub| sub.is_a?(Subscription) ? sub : Subscription.new(**sub) }
       end
 
       def to_h
