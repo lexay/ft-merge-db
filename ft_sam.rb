@@ -77,28 +77,28 @@ module FreeTubeTools
           'textColor' => @text_color,
           'subscriptions' => self.subscriptions.map(&:to_h) }
       end
-    end
 
-    class Subscription
-      attr_reader :name
+      class Subscription
+        attr_reader :name
 
-      def initialize(id: nil, name: nil, thumbnail: nil, selected: nil)
-        @id = id
-        @name = name
-        @thumbnail = thumbnail
-        @selected = selected
-      end
+        def initialize(id: nil, name: nil, thumbnail: nil, selected: nil)
+          @id = id
+          @name = name
+          @thumbnail = thumbnail
+          @selected = selected
+        end
 
-      def eql?(other)
-        @name == other.name
-      end
+        def eql?(other)
+          @name == other.name
+        end
 
-      def hash
-        @name.hash
-      end
+        def hash
+          @name.hash
+        end
 
-      def to_h
-        { 'name' => @name, 'id' => @id, 'thumbnail' => @thumbnail }
+        def to_h
+          { 'name' => @name, 'id' => @id, 'thumbnail' => @thumbnail }
+        end
       end
     end
   end
