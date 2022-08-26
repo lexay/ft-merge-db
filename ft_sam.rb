@@ -23,7 +23,7 @@ module FreeTubeTools
     def self.merge(imported_lists = [], merged_list)
       imported_lists.each do |i_list|
         i_list.categories.each do |i_cat|
-          merged_cat_matched = merged_list.categories.find { |m_cat| m_cat.name == i_cat.name }
+          merged_cat_matched = merged_list.categories.find { |m_cat| m_cat.id == i_cat.id }
 
           if merged_cat_matched
             merged_cat_matched.subscriptions = merged_cat_matched.subscriptions | i_cat.subscriptions
