@@ -6,10 +6,10 @@ Bundler.require(:default)
 module FreeTubeTools
   class SubscriptionMerger
     def self.run
-      backup_dbs = ARGV
-      imported_lists = backup_dbs.map { |db| List.new(deserialize(db)) }
-      merged_list = merge(imported_lists, List.new)
-      save(merged_list)
+      lists = ARGV
+      imported = lists.map { |list| List.new deserialize(list) }
+      merged = merge(imported, List.new)
+      save(merged)
     end
 
     def self.deserialize(db)
@@ -20,24 +20,19 @@ module FreeTubeTools
       end
     end
 
-    def self.merge(imported_lists = [], merged_list)
-      imported_lists.each do |i_list|
-        i_list.categories.each do |i_cat|
-          merged_cat_matched = merged_list.categories.find { |m_cat| m_cat.id == i_cat.id }
+    def self.merge(imported = [], merged)
+      imported.each do |list|
+        list.categories.each do |i_cat|
+          match = merged.categories.find { |m_cat| m_cat == i_cat }
 
-          if merged_cat_matched
-            merged_cat_matched.subscriptions = merged_cat_matched.subscriptions | i_cat.subscriptions
+          if match
+            match.subscriptions = match.subscriptions.union(i_cat.subscriptions)
           else
-            new_cat = List::Category.new(name: i_cat.name,
-                                         _id: i_cat.id,
-                                         bg_color: i_cat.bg_color,
-                                         text_color: i_cat.text_color,
-                                         subscriptions: i_cat.subscriptions)
-            merged_list.categories.push(new_cat)
+            merged.categories.push i_cat
           end
         end
       end
-      merged_list
+      merged
     end
 
     def self.save(list)
@@ -62,12 +57,12 @@ module FreeTubeTools
       attr_accessor :subscriptions
       attr_reader :name, :id, :bg_color, :text_color
 
-      def initialize(name: nil, _id: nil, bg_color: nil, text_color: nil, subscriptions: [])
+      def initialize(name:, _id:, bg_color:, text_color:, subscriptions: [])
         @name = name
         @id = _id
         @bg_color = bg_color
         @text_color = text_color
-        @subscriptions = subscriptions.map { |sub| sub.is_a?(Subscription) ? sub : Subscription.new(**sub) }
+        @subscriptions = subscriptions.map { |sub| Subscription.new(**sub) }
       end
 
       def to_h
@@ -78,10 +73,22 @@ module FreeTubeTools
           'subscriptions' => self.subscriptions.map(&:to_h) }
       end
 
-      class Subscription
-        attr_reader :name
+      def eql?(other)
+        self == other
+      end
 
-        def initialize(id: nil, name: nil, thumbnail: nil, selected: nil)
+      def ==(other)
+        self.id == other.id
+      end
+
+      def hash
+        self.id.hash
+      end
+
+      class Subscription
+        attr_reader :name, :id
+
+        def initialize(id:, name:, thumbnail:, selected: false)
           @id = id
           @name = name
           @thumbnail = thumbnail
@@ -89,11 +96,15 @@ module FreeTubeTools
         end
 
         def eql?(other)
-          @name == other.name
+          self == other
+        end
+
+        def ==(other)
+          self.id == other.id && self.name == other.name
         end
 
         def hash
-          @name.hash
+          self.id.hash ^ self.name.hash
         end
 
         def to_h
