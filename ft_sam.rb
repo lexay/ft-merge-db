@@ -55,7 +55,7 @@ module FreeTubeTools
 
     class Category
       attr_accessor :subscriptions
-      attr_reader :name, :id, :bg_color, :text_color
+      attr_reader :id
 
       def initialize(name:, _id:, bg_color:, text_color:, subscriptions: [])
         @name = name
