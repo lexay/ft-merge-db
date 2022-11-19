@@ -6,21 +6,38 @@ Bundler.require(:default)
 module FreeTubeTools
   class SubscriptionMerger
     def self.run
-      lists = ARGV
-      imported = lists.map { |list| List.new deserialize(list) }
+      SubscriptionMerger.new(ARGV).run
+    end
+
+    def initialize(files)
+      @files = files.map { |arg| File.new(arg, 'r') }.sort_by(&:mtime).reverse
+    end
+
+    def run
+      imported = parse_input
       merged = merge(imported, List.new)
       save(merged)
     end
 
-    def self.deserialize(db)
-      lines = File.open("./#{db}", 'r', &:readlines)
-      lines.map do |line|
-        hash = JSON.parse(line)
+    private
+
+    def parse_input
+      lists = convert_files
+      lists.map { |list| List.new deserialize(list) }
+    end
+
+    def convert_files
+      @files.map(&:readlines)
+    end
+
+    def deserialize(lists)
+      lists.map do |list|
+        hash = JSON.parse(list)
         hash.deep_transform_keys { |key| key.underscore.to_sym }
       end
     end
 
-    def self.merge(imported = [], merged)
+    def merge(imported = [], merged)
       imported.each do |list|
         list.categories.each do |i_cat|
           match = merged.categories.find { |m_cat| m_cat == i_cat }
@@ -35,7 +52,7 @@ module FreeTubeTools
       merged
     end
 
-    def self.save(list)
+    def save(list)
       date = Time.now.strftime('%Y-%m-%d_%H%M')
       new_backup_db = File.open("./ft_merged_#{date}.db", 'w')
       new_backup_db.write(list.to_s)
