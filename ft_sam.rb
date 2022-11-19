@@ -22,18 +22,18 @@ module FreeTubeTools
     private
 
     def parse_input
-      lists = convert_files
-      lists.map { |list| List.new deserialize(list) }
+      lists_of_categories = convert_files
+      lists_of_categories.map { |list| List.new deserialize(list) }
     end
 
     def convert_files
       @files.map(&:readlines)
     end
 
-    def deserialize(lists)
-      lists.map do |list|
-        hash = JSON.parse(list)
-        hash.deep_transform_keys { |key| key.underscore.to_sym }
+    def deserialize(categories)
+      categories.map do |category|
+        parsed = JSON.parse(category)
+        parsed.deep_transform_keys { |key| key.underscore.to_sym }
       end
     end
 
